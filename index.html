@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="PureDex is a clean Pokédex-style tool focused on the original 151 Pokémon."
+    />
+    <title>PureDex</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="site-header">
+        <div class="header-left">
+          <div class="pokedex-lights" aria-hidden="true">
+            <div class="main-orb-shell">
+              <div class="main-orb"></div>
+            </div>
+            <div class="indicator-row">
+              <span class="indicator red"></span>
+              <span class="indicator yellow"></span>
+              <span class="indicator green"></span>
+            </div>
+          </div>
+          <div>
+            <p class="eyebrow">Gen 1 Focus</p>
+            <h1>PureDex</h1>
+            <p class="subtitle">The clean Pokédex for the original 151.</p>
+          </div>
+        </div>
+        <span class="header-badge">Milestone 3A</span>
+      </header>
+
+      <main>
+        <section class="controls section-card" aria-labelledby="controls-heading">
+          <div class="controls-copy">
+            <h2 id="controls-heading">Find Pokémon faster, with less noise.</h2>
+            <p>
+              PureDex is built to feel cleaner than the usual info-overloaded Pokémon
+              sites. Fast lookups, readable layouts, and only the details you
+              actually care about.
+            </p>
+          </div>
+
+          <div class="controls-panel">
+            <label class="field-label" for="search-input">Search Pokémon</label>
+            <input
+              id="search-input"
+              class="search-input"
+              type="search"
+              placeholder="Search by name, partial name, or number..."
+              autocomplete="off"
+            />
+
+            <div id="search-feedback" class="search-feedback" aria-live="polite">
+              Showing all 151 Pokémon.
+            </div>
+
+            <div class="filter-row" aria-label="Future filter controls">
+              <button class="filter-chip" disabled>All Types</button>
+              <button class="filter-chip" disabled>Favorites</button>
+              <button class="filter-chip" disabled>Sort A–Z</button>
+            </div>
+
+            <p class="helper-text">Milestone 3A: click a Pokémon to view weaknesses and quick details.</p>
+          </div>
+        </section>
+
+        <section id="pokedex-entries" class="grid-section">
+          <div class="section-heading">
+            <h2>Pokédex Entries</h2>
+            <p>Original 151 Pokémon, rendered cleanly.</p>
+          </div>
+
+          <div id="status-message" class="status-message" role="status">Loading Pokémon data…</div>
+          <div id="pokemon-grid" class="pokemon-grid" aria-label="Pokémon entries"></div>
+        </section>
+      </main>
+
+      <div id="modal-overlay" class="modal-overlay hidden" aria-hidden="true">
+        <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <button id="modal-close" class="modal-close" aria-label="Close details">×</button>
+          <div id="modal-content"></div>
+        </div>
+      </div>
+
+      <button id="back-to-top" class="back-to-top hidden" aria-label="Back to top">↑</button>
+
+      <footer class="site-footer">
+        <p>PureDex — built as a cleaner Pokémon lookup tool.</p>
+        <p class="footer-note">Pokémon data provided by PokéAPI.</p>
+      </footer>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
