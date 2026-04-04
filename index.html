@@ -45,10 +45,27 @@
           <div class="controls-copy">
             <h2 id="controls-heading">Find Pokémon faster, with less noise.</h2>
             <p>
-              PureDex is built to feel cleaner than the usual info-overloaded Pokémon
-              sites. Fast lookups, readable layouts, and only the details you
-              actually care about.
+              PureDex keeps the most useful Gen 1 info front and center without making
+              you dig through a wiki-sized wall of text.
             </p>
+            <div class="feature-list" aria-label="PureDex highlights">
+              <div class="feature-item">
+                <span class="feature-title">Fast Search</span>
+                <span class="feature-copy">Find by name, partial name, or dex number.</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-title">Battle Matchups</span>
+                <span class="feature-copy">Check weaknesses and super-effective targets fast.</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-title">Evolution Lookup</span>
+                <span class="feature-copy">See how and when a Pokémon evolves at a glance.</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-title">Variant View</span>
+                <span class="feature-copy">Swap between normal and shiny artwork in the modal.</span>
+              </div>
+            </div>
           </div>
 
           <div class="controls-panel">
@@ -61,14 +78,32 @@
               autocomplete="off"
             />
 
-            <div id="search-feedback" class="search-feedback" aria-live="polite">
-              Showing all 151 Pokémon.
+            <div class="filter-stack" aria-label="Pokédex filter controls">
+              <div class="control-group">
+                <label class="field-label" for="type-filter">Filter by Type</label>
+                <select id="type-filter" class="control-select">
+                  <option value="all">All Types</option>
+                </select>
+              </div>
+              <div class="control-group">
+                <label class="field-label" for="sort-select">Sort</label>
+                <select id="sort-select" class="control-select">
+                  <option value="dex-asc">Dex # (Ascending)</option>
+                  <option value="dex-desc">Dex # (Descending)</option>
+                  <option value="name-asc">Name (A–Z)</option>
+                  <option value="name-desc">Name (Z–A)</option>
+                </select>
+              </div>
             </div>
 
-            <div class="filter-row" aria-label="Future filter controls">
-              <button class="filter-chip" disabled>All Types</button>
-              <button class="filter-chip" disabled>Favorites</button>
-              <button class="filter-chip" disabled>Sort A–Z</button>
+            <div class="view-row">
+              <div class="control-group control-group-wide">
+                <label class="field-label" for="search-feedback">Active View</label>
+                <div id="search-feedback" class="search-feedback" aria-live="polite">
+                  Showing all 151 Pokémon.
+                </div>
+              </div>
+              <button id="reset-view" class="reset-button" type="button">Reset View</button>
             </div>
 
             <p class="helper-text">Version 1.0: search, compare weaknesses, check matchups, and view evolution info fast.</p>
@@ -101,6 +136,6 @@
       </footer>
     </div>
 
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
   </body>
 </html>
