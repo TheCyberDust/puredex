@@ -88,6 +88,15 @@ const renderStatsSection = (stats) => {
   `;
 };
 
+const getFlavorText = (speciesData) => {
+  const englishEntry = speciesData.flavor_text_entries?.find((entry) => entry.language.name === 'en');
+  if (!englishEntry) {
+    return 'No Pokédex entry available.';
+  }
+
+  return englishEntry.flavor_text.replace(/\n|\f/g, ' ').replace(/\s+/g, ' ').trim();
+};
+
 const renderVariantControls = (currentSpriteMode) => `
   <div class="variant-panel">
     <div class="variant-header-row">
@@ -174,6 +183,11 @@ export const renderModalContent = ({ pokemon, modalMeta, currentSpriteMode, isFa
     ${renderStatsSection(pokemon.stats)}
 
     <section class="modal-section">
+      <h3>Pokédex Entry</h3>
+      <p class="flavor-entry">${getFlavorText(modalMeta.speciesData)}</p>
+    </section>
+
+    <section class="modal-section">
       <h3>Abilities</h3>
       <div class="ability-list">
         ${modalMeta.abilityDetails
@@ -192,16 +206,6 @@ export const renderModalContent = ({ pokemon, modalMeta, currentSpriteMode, isFa
       </div>
     </section>
 
-    <section class="modal-section modal-facts">
-      <div class="fact-card">
-        <span class="fact-label">Height</span>
-        <span class="fact-value">${pokemon.height / 10} m</span>
-      </div>
-      <div class="fact-card">
-        <span class="fact-label">Weight</span>
-        <span class="fact-value">${pokemon.weight / 10} kg</span>
-      </div>
-    </section>
   `;
 };
 

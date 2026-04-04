@@ -10,6 +10,8 @@ const typeFilter = document.getElementById('type-filter');
 const sortSelect = document.getElementById('sort-select');
 const resetViewButton = document.getElementById('reset-view');
 const favoritesToggleButton = document.getElementById('favorites-toggle');
+const controlsToggleButton = document.getElementById('controls-toggle');
+const controlsBody = document.getElementById('advanced-controls');
 const modalOverlay = document.getElementById('modal-overlay');
 const modalContent = document.getElementById('modal-content');
 const modalCloseButton = document.getElementById('modal-close');
@@ -56,6 +58,26 @@ const toggleFavorite = (pokemonId) => {
   }
 
   persistFavorites();
+};
+
+const updateControlsToggle = () => {
+  if (!controlsToggleButton || !controlsBody) {
+    return;
+  }
+
+  const isMobile = window.matchMedia('(max-width: 640px)').matches;
+
+  if (!isMobile) {
+    controlsBody.classList.remove('collapsed');
+    controlsToggleButton.hidden = true;
+    controlsToggleButton.setAttribute('aria-expanded', 'true');
+    return;
+  }
+
+  controlsToggleButton.hidden = false;
+  const isHidden = controlsBody.classList.contains('collapsed');
+  controlsToggleButton.textContent = isHidden ? 'Show Tools' : 'Hide Tools';
+  controlsToggleButton.setAttribute('aria-expanded', String(!isHidden));
 };
 
 const createTypeChip = (typeName) => {
@@ -256,13 +278,14 @@ const openModal = async (pokemon) => {
   modalOverlay.setAttribute('aria-hidden', 'false');
   modalContent.innerHTML = '<p class="modal-loading">Analyzing Pokédex Data…</p>';
 
-  const [{ weaknesses, strengths }, evolutionInfo, abilityDetails] = await Promise.all([
+  const [{ weaknesses, strengths }, evolutionInfo, abilityDetails, speciesData] = await Promise.all([
     calculateDamageProfile(pokemon),
     getEvolutionInfo(pokemon),
     getAbilityDetails(pokemon),
+    import('./js/data.js').then(({ fetchSpeciesData }) => fetchSpeciesData(pokemon)),
   ]);
 
-  pokemon._modalMeta = { weaknesses, strengths, evolutionInfo, abilityDetails };
+  pokemon._modalMeta = { weaknesses, strengths, evolutionInfo, abilityDetails, speciesData };
   refreshModal();
 };
 
@@ -358,6 +381,20 @@ if (resetViewButton) {
     searchInput.value = '';
     applyControls();
   });
+}
+
+if (controlsToggleButton && controlsBody) {
+  if (window.matchMedia('(max-width: 640px)').matches) {
+    controlsBody.classList.add('collapsed');
+  }
+
+  controlsToggleButton.addEventListener('click', () => {
+    controlsBody.classList.toggle('collapsed');
+    updateControlsToggle();
+  });
+
+  window.addEventListener('resize', updateControlsToggle);
+  updateControlsToggle();
 }
 
 if (backToTopButton) {

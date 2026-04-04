@@ -1371,3 +1371,62 @@ h1 {
   background: linear-gradient(180deg, #ffe388, #e1b944);
   color: #6b4900;
 }
+
+
+.controls-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.controls-body.collapsed {
+  display: none;
+}
+
+.controls-toggle {
+  border: 2px solid var(--chip-border);
+  background: var(--chip);
+  color: var(--line);
+  border-radius: 14px;
+  padding: 0.6rem 0.85rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.flavor-entry {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+
+@media (max-width: 640px) {
+  .controls-panel-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .controls-toggle {
+    width: 100%;
+  }
+}
+
+
+.controls-toggle[hidden] {
+  display: none;
+}
+
+
+@media (max-width: 640px) {
+  .controls-panel-header {
+    margin-bottom: 0.7rem;
+  }
+
+  .controls-toggle {
+    order: 3;
+    margin-top: 0.75rem;
+  }
+}

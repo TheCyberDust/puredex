@@ -69,7 +69,12 @@
           </div>
 
           <div class="controls-panel">
-            <label class="field-label" for="search-input">Search Pokémon</label>
+            <div class="controls-panel-header">
+              <div>
+                <label class="field-label" for="search-input">Search Pokémon</label>
+              </div>
+            </div>
+
             <input
               id="search-input"
               class="search-input"
@@ -78,6 +83,9 @@
               autocomplete="off"
             />
 
+            <button id="controls-toggle" class="controls-toggle" type="button" aria-expanded="true" aria-controls="advanced-controls">Show Tools</button>
+
+            <div id="advanced-controls" class="controls-body">
             <div class="filter-stack" aria-label="Pokédex filter controls">
               <div class="control-group">
                 <label class="field-label" for="type-filter">Filter by Type</label>
@@ -111,6 +119,7 @@
             </div>
 
             <p class="helper-text">Version 1.2: search, filter, sort, compare matchups, inspect stats, and view evolution info fast.</p>
+            </div>
           </div>
         </section>
 
