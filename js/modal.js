@@ -42,6 +42,52 @@ export const renderEvolutionSection = (evolutionInfo) => {
   `;
 };
 
+const renderStatsSection = (stats) => {
+  const statNameMap = {
+    hp: 'HP',
+    attack: 'Attack',
+    defense: 'Defense',
+    'special-attack': 'Sp. Attack',
+    'special-defense': 'Sp. Defense',
+    speed: 'Speed',
+  };
+
+  const maxStatValue = 255;
+  const total = stats.reduce((sum, stat) => sum + stat.base_stat, 0);
+
+  const rows = stats
+    .map((stat) => {
+      const label = statNameMap[stat.stat.name] || stat.stat.name;
+      const width = Math.max(8, (stat.base_stat / maxStatValue) * 100);
+      const toneClass = stat.base_stat < 60 ? 'low' : stat.base_stat < 100 ? 'mid' : 'high';
+      return `
+        <div class="stat-row">
+          <div class="stat-heading-row">
+            <span class="stat-name">${label}</span>
+            <span class="stat-value">${stat.base_stat}</span>
+          </div>
+          <div class="stat-bar-track">
+            <div class="stat-bar-fill ${toneClass}" style="width: ${width}%"></div>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  return `
+    <section class="modal-section">
+      <h3>Stats</h3>
+      <div class="stats-block">
+        ${rows}
+        <div class="stat-total-card">
+          <span class="fact-label">Base Stat Total</span>
+          <span class="stat-total-value">${total}</span>
+        </div>
+      </div>
+    </section>
+  `;
+};
+
 const renderVariantControls = (currentSpriteMode) => `
   <div class="variant-panel">
     <div class="variant-header-row">
@@ -123,6 +169,8 @@ export const renderModalContent = ({ pokemon, modalMeta, currentSpriteMode }) =>
       <h3>Evolution</h3>
       ${renderEvolutionSection(modalMeta.evolutionInfo)}
     </section>
+
+    ${renderStatsSection(pokemon.stats)}
 
     <section class="modal-section">
       <h3>Abilities</h3>

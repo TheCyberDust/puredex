@@ -1243,3 +1243,75 @@ h1 {
   color: rgba(255, 247, 243, 0.88);
   line-height: 1.45;
 }
+
+
+.stats-block {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.stat-row {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.stat-heading-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.stat-name,
+.stat-value,
+.stat-total-value {
+  font-weight: 800;
+  color: var(--line);
+}
+
+.stat-bar-track {
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(123, 143, 160, 0.2);
+  border: 1px solid rgba(95, 147, 183, 0.28);
+  overflow: hidden;
+}
+
+.stat-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #87b8d9, #4c89b4);
+}
+
+.stat-bar-fill.low {
+  background: linear-gradient(90deg, #e98f87, #d85b52);
+}
+
+.stat-bar-fill.mid {
+  background: linear-gradient(90deg, #f0cf73, #dbaa35);
+}
+
+.stat-bar-fill.high {
+  background: linear-gradient(90deg, #7fd19d, #3ea968);
+}
+
+.stat-total-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.35rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.22);
+  border: 2px solid var(--screen-border);
+}
+
+
+@media (max-width: 640px) {
+  .stat-heading-row,
+  .stat-total-card {
+    gap: 0.65rem;
+  }
+}
