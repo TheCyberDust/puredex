@@ -20,6 +20,7 @@ let currentModalPokemon = null;
 let currentSpriteMode = 'normal';
 let currentTypeFilter = 'all';
 let currentSortMode = 'dex-asc';
+let currentVisiblePokemon = [];
 
 const createTypeChip = (typeName) => {
   const chip = document.createElement('span');
@@ -65,6 +66,7 @@ const createPokemonCard = (pokemon) => {
 };
 
 const renderPokemon = (pokemonList) => {
+  currentVisiblePokemon = pokemonList;
   pokemonGrid.innerHTML = '';
 
   if (!pokemonList.length) {
@@ -143,6 +145,34 @@ const applyControls = () => {
   const queryLabel = query ? ` matching "${query}"` : '';
   setStatus(`Showing ${filteredPokemon.length} Pokémon for ${filterLabel}${queryLabel}.`);
   setSearchFeedback(`Filter: ${filterLabel} • Sort: ${sortSelect.options[sortSelect.selectedIndex].text}`);
+};
+
+const findExactSearchMatch = (query) => {
+  const trimmedQuery = query.trim().toLowerCase();
+  if (!trimmedQuery) {
+    return null;
+  }
+
+  const exactNameMatch = currentVisiblePokemon.find((pokemon) => pokemon.name.toLowerCase() === trimmedQuery);
+  if (exactNameMatch) {
+    return exactNameMatch;
+  }
+
+  const exactNumberMatch = currentVisiblePokemon.find((pokemon) => {
+    const id = String(pokemon.id);
+    const padded = String(pokemon.id).padStart(3, '0');
+    return trimmedQuery === id || trimmedQuery === padded;
+  });
+
+  if (exactNumberMatch) {
+    return exactNumberMatch;
+  }
+
+  if (currentVisiblePokemon.length === 1) {
+    return currentVisiblePokemon[0];
+  }
+
+  return null;
 };
 
 const refreshModal = () => {
@@ -237,9 +267,23 @@ document.addEventListener('keydown', (event) => {
 });
 
 searchInput.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' && pokedexEntriesSection) {
+  if (event.key === 'Enter') {
     event.preventDefault();
-    pokedexEntriesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    const matchedPokemon = findExactSearchMatch(searchInput.value);
+    if (matchedPokemon) {
+      openModal(matchedPokemon);
+      return;
+    }
+
+    if (searchInput.value.trim() && currentVisiblePokemon.length > 1) {
+      setStatus('Multiple matches found — refine your search or choose a Pokémon card.');
+      setSearchFeedback(`Filter: ${currentTypeFilter === 'all' ? 'all types' : `${toTitleCase(currentTypeFilter)} type`} • Sort: ${sortSelect.options[sortSelect.selectedIndex].text}`);
+    }
+
+    if (pokedexEntriesSection) {
+      pokedexEntriesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 });
 
