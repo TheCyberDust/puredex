@@ -265,6 +265,7 @@ h1 {
 }
 
 .pokemon-card {
+  position: relative;
   padding: 1.2rem;
   background: linear-gradient(180deg, #f7f2e6, #ece3cb);
   border: 2px solid var(--screen-border);
@@ -1314,4 +1315,59 @@ h1 {
   .stat-total-card {
     gap: 0.65rem;
   }
+}
+
+
+.favorite-badge {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(255, 216, 107, 0.3);
+  border: 1px solid rgba(179, 126, 21, 0.38);
+  color: #9c6c05;
+  font-weight: 900;
+}
+
+.favorite-toggle {
+  margin-top: 0.85rem;
+  border: 2px solid #d8b45f;
+  background: linear-gradient(180deg, #fff1b8, #f4d670);
+  color: #7a5608;
+  border-radius: 14px;
+  padding: 0.55rem 0.9rem;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.favorite-toggle.active {
+  background: linear-gradient(180deg, #ffe388, #e1b944);
+  color: #6b4900;
+}
+
+
+.favorites-row {
+  margin-top: 1rem;
+}
+
+.favorites-toggle {
+  border: 2px solid #d8b45f;
+  background: linear-gradient(180deg, #fff8db, #f4e0a0);
+  color: #7a5608;
+  border-radius: 14px;
+  padding: 0.75rem 1rem;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.favorites-toggle.active {
+  background: linear-gradient(180deg, #ffe388, #e1b944);
+  color: #6b4900;
 }

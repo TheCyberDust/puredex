@@ -9,6 +9,7 @@ const searchFeedback = document.getElementById('search-feedback');
 const typeFilter = document.getElementById('type-filter');
 const sortSelect = document.getElementById('sort-select');
 const resetViewButton = document.getElementById('reset-view');
+const favoritesToggleButton = document.getElementById('favorites-toggle');
 const modalOverlay = document.getElementById('modal-overlay');
 const modalContent = document.getElementById('modal-content');
 const modalCloseButton = document.getElementById('modal-close');
@@ -21,6 +22,41 @@ let currentSpriteMode = 'normal';
 let currentTypeFilter = 'all';
 let currentSortMode = 'dex-asc';
 let currentVisiblePokemon = [];
+let showFavoritesOnly = false;
+const FAVORITES_STORAGE_KEY = 'puredex-favorites';
+const favoritePokemonIds = new Set();
+
+const loadFavorites = () => {
+  try {
+    const raw = localStorage.getItem(FAVORITES_STORAGE_KEY);
+    if (!raw) {
+      return;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      parsed.forEach((id) => favoritePokemonIds.add(id));
+    }
+  } catch (error) {
+    console.warn('Could not load favorites.', error);
+  }
+};
+
+const persistFavorites = () => {
+  localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([...favoritePokemonIds]));
+};
+
+const isFavorite = (pokemonId) => favoritePokemonIds.has(pokemonId);
+
+const toggleFavorite = (pokemonId) => {
+  if (favoritePokemonIds.has(pokemonId)) {
+    favoritePokemonIds.delete(pokemonId);
+  } else {
+    favoritePokemonIds.add(pokemonId);
+  }
+
+  persistFavorites();
+};
 
 const createTypeChip = (typeName) => {
   const chip = document.createElement('span');
@@ -41,6 +77,7 @@ const createPokemonCard = (pokemon) => {
   const isFallback = sprite === FALLBACK_SPRITE;
 
   card.innerHTML = `
+    ${isFavorite(pokemon.id) ? '<span class="favorite-badge" aria-hidden="true">★</span>' : ''}
     <span class="dex-number">#${dexNumber}</span>
     <div class="sprite-shell ${isFallback ? 'fallback-shell' : ''}">
       <img src="${sprite}" alt="${pokemon.name} sprite" loading="lazy" />
@@ -122,7 +159,9 @@ const applyControls = () => {
       currentTypeFilter === 'all' ||
       pokemon.types.some((entry) => entry.type.name === currentTypeFilter);
 
-    return matchesSearch && matchesType;
+    const matchesFavorite = !showFavoritesOnly || isFavorite(pokemon.id);
+
+    return matchesSearch && matchesType && matchesFavorite;
   });
 
   filteredPokemon = [...filteredPokemon].sort((left, right) => {
@@ -142,9 +181,16 @@ const applyControls = () => {
   renderPokemon(filteredPokemon);
 
   const filterLabel = currentTypeFilter === 'all' ? 'all types' : `${toTitleCase(currentTypeFilter)} type`;
+  const favoriteLabel = showFavoritesOnly ? ' • Favorites only' : '';
   const queryLabel = query ? ` matching "${query}"` : '';
-  setStatus(`Showing ${filteredPokemon.length} Pokémon for ${filterLabel}${queryLabel}.`);
-  setSearchFeedback(`Filter: ${filterLabel} • Sort: ${sortSelect.options[sortSelect.selectedIndex].text}`);
+  setStatus(`Showing ${filteredPokemon.length} Pokémon for ${filterLabel}${favoriteLabel}${queryLabel}.`);
+  setSearchFeedback(`Filter: ${filterLabel}${favoriteLabel} • Sort: ${sortSelect.options[sortSelect.selectedIndex].text}`);
+
+  if (favoritesToggleButton) {
+    favoritesToggleButton.textContent = showFavoritesOnly ? '★ Favorites Only' : '☆ Favorites Only';
+    favoritesToggleButton.classList.toggle('active', showFavoritesOnly);
+    favoritesToggleButton.setAttribute('aria-pressed', String(showFavoritesOnly));
+  }
 };
 
 const findExactSearchMatch = (query) => {
@@ -184,6 +230,7 @@ const refreshModal = () => {
     pokemon: currentModalPokemon,
     modalMeta: currentModalPokemon._modalMeta,
     currentSpriteMode,
+    isFavorite: isFavorite(currentModalPokemon.id),
   });
 
   attachModalInteractions({
@@ -191,6 +238,12 @@ const refreshModal = () => {
     onVariantChange: (variant) => {
       currentSpriteMode = variant;
       refreshModal();
+    },
+    onFavoriteToggle: () => {
+      if (!currentModalPokemon) return;
+      toggleFavorite(currentModalPokemon.id);
+      refreshModal();
+      applyControls();
     },
   });
 };
@@ -232,6 +285,7 @@ const handleBackToTopVisibility = () => {
 
 const init = async () => {
   try {
+    loadFavorites();
     setStatus('Loading Pokémon data…');
     allPokemon = await fetchPokemonList();
     populateTypeFilter(allPokemon);
@@ -287,10 +341,18 @@ searchInput.addEventListener('keydown', (event) => {
   }
 });
 
+if (favoritesToggleButton) {
+  favoritesToggleButton.addEventListener('click', () => {
+    showFavoritesOnly = !showFavoritesOnly;
+    applyControls();
+  });
+}
+
 if (resetViewButton) {
   resetViewButton.addEventListener('click', () => {
     currentTypeFilter = 'all';
     currentSortMode = 'dex-asc';
+    showFavoritesOnly = false;
     typeFilter.value = 'all';
     sortSelect.value = 'dex-asc';
     searchInput.value = '';

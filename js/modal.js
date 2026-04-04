@@ -129,7 +129,7 @@ const renderVariantControls = (currentSpriteMode) => `
   </div>
 `;
 
-export const renderModalContent = ({ pokemon, modalMeta, currentSpriteMode }) => {
+export const renderModalContent = ({ pokemon, modalMeta, currentSpriteMode, isFavorite }) => {
   const dexNumber = String(pokemon.id).padStart(3, '0');
   const sprite = getSpriteUrl(pokemon, currentSpriteMode);
 
@@ -147,6 +147,7 @@ export const renderModalContent = ({ pokemon, modalMeta, currentSpriteMode }) =>
             .map((entry) => `<span class="type-chip ${entry.type.name}">${entry.type.name}</span>`)
             .join('')}
         </div>
+        <button class="favorite-toggle ${isFavorite ? 'active' : ''}" type="button" data-favorite-toggle aria-pressed="${isFavorite}">${isFavorite ? '★ Favorited' : '☆ Favorite'}</button>
         ${renderVariantControls(currentSpriteMode)}
       </div>
     </div>
@@ -204,13 +205,18 @@ export const renderModalContent = ({ pokemon, modalMeta, currentSpriteMode }) =>
   `;
 };
 
-export const attachModalInteractions = ({ modalContent, onVariantChange }) => {
+export const attachModalInteractions = ({ modalContent, onVariantChange, onFavoriteToggle }) => {
   const variantButtons = modalContent.querySelectorAll('[data-variant]');
   variantButtons.forEach((button) => {
     button.addEventListener('click', () => {
       onVariantChange(button.dataset.variant);
     });
   });
+
+  const favoriteToggle = modalContent.querySelector('[data-favorite-toggle]');
+  if (favoriteToggle && onFavoriteToggle) {
+    favoriteToggle.addEventListener('click', onFavoriteToggle);
+  }
 
   const hintToggle = modalContent.querySelector('.variant-hint-toggle');
   const hintPanel = modalContent.querySelector('.variant-hint-panel');
