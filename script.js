@@ -14,9 +14,12 @@ const backToTopButton = document.getElementById('back-to-top');
 const pokedexEntriesSection = document.getElementById('pokedex-entries');
 
 let allPokemon = [];
+let currentModalPokemon = null;
+let currentSpriteMode = 'normal';
 const typeCache = new Map();
 const speciesCache = new Map();
 const evolutionChainCache = new Map();
+const abilityCache = new Map();
 
 const toTitleCase = (value) =>
   value
@@ -91,13 +94,36 @@ const fetchEvolutionChain = async (chainUrl) => {
   return data;
 };
 
-const getSpriteUrl = (pokemon) => {
-  return (
-    pokemon.sprites.other?.['official-artwork']?.front_default ||
+const fetchAbilityData = async (abilityUrl) => {
+  if (abilityCache.has(abilityUrl)) {
+    return abilityCache.get(abilityUrl);
+  }
+
+  const response = await fetch(abilityUrl);
+  if (!response.ok) {
+    throw new Error('Could not fetch ability data.');
+  }
+
+  const data = await response.json();
+  abilityCache.set(abilityUrl, data);
+  return data;
+};
+
+const getSpriteUrl = (pokemon, mode = 'normal') => {
+  const officialArtwork = pokemon.sprites.other?.['official-artwork'];
+  const artworkNormal = officialArtwork?.front_default;
+  const artworkShiny = officialArtwork?.front_shiny;
+  const normalSprite =
+    artworkNormal ||
     pokemon.sprites.front_default ||
     pokemon.sprites.other?.dream_world?.front_default ||
-    FALLBACK_SPRITE
-  );
+    FALLBACK_SPRITE;
+
+  if (mode === 'shiny') {
+    return artworkShiny || pokemon.sprites.front_shiny || normalSprite;
+  }
+
+  return normalSprite;
 };
 
 const createTypeChip = (typeName) => {
@@ -223,8 +249,27 @@ const calculateDamageProfile = async (pokemon) => {
   return { weaknesses, strengths };
 };
 
-const formatAbilities = (pokemon) =>
-  pokemon.abilities.map((entry) => entry.ability.name.replace('-', ' ')).join(', ');
+const getAbilityDescription = (abilityData) => {
+  const englishEntry = abilityData.effect_entries?.find((entry) => entry.language.name === 'en');
+  if (!englishEntry) {
+    return 'Description unavailable.';
+  }
+
+  return englishEntry.short_effect.replace(/\n|\f/g, ' ').replace(/\s+/g, ' ').trim();
+};
+
+const getAbilityDetails = async (pokemon) => {
+  return Promise.all(
+    pokemon.abilities.map(async (entry) => {
+      const abilityData = await fetchAbilityData(entry.ability.url);
+      return {
+        name: toTitleCase(entry.ability.name),
+        description: getAbilityDescription(abilityData),
+        isHidden: entry.is_hidden,
+      };
+    })
+  );
+};
 
 const renderDamageChips = (entries, emptyMessage) => {
   if (!entries.length) {
@@ -375,23 +420,77 @@ const renderEvolutionSection = (evolutionInfo) => {
   `;
 };
 
-const openModal = async (pokemon) => {
-  modalOverlay.classList.remove('hidden');
-  modalOverlay.setAttribute('aria-hidden', 'false');
-  modalContent.innerHTML = '<p class="modal-loading">Analyzing Pokédex Data…</p>';
+const renderVariantControls = () => `
+  <div class="variant-panel">
+    <div class="variant-header-row">
+      <p class="variant-label">Sprite View</p>
+      <button class="variant-hint-toggle" type="button" aria-expanded="false" aria-controls="variant-hint-panel">
+        <span class="variant-hint-arrow">▾</span>
+        Hint
+      </button>
+    </div>
+    <div id="variant-hint-panel" class="variant-hint-panel hidden">
+      <p class="variant-helper">Switch between normal and shiny artwork. Regional forms are planned for later.</p>
+    </div>
+    <div class="variant-controls" role="group" aria-label="Sprite variant controls">
+      <button
+        class="variant-button ${currentSpriteMode === 'normal' ? 'active' : ''}"
+        type="button"
+        data-variant="normal"
+        aria-pressed="${currentSpriteMode === 'normal'}"
+      >
+        Normal
+      </button>
+      <button
+        class="variant-button ${currentSpriteMode === 'shiny' ? 'active' : ''}"
+        type="button"
+        data-variant="shiny"
+        aria-pressed="${currentSpriteMode === 'shiny'}"
+      >
+        Shiny
+      </button>
+      <button
+        class="variant-button placeholder"
+        type="button"
+        disabled
+        title="Regional forms are planned for later."
+      >
+        Regional Forms
+      </button>
+    </div>
+  </div>
+`;
 
+const attachModalInteractions = () => {
+  const variantButtons = modalContent.querySelectorAll('[data-variant]');
+  variantButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      currentSpriteMode = button.dataset.variant;
+      if (currentModalPokemon) {
+        renderModalContent(currentModalPokemon, currentModalPokemon._modalMeta);
+      }
+    });
+  });
+
+  const hintToggle = modalContent.querySelector('.variant-hint-toggle');
+  const hintPanel = modalContent.querySelector('.variant-hint-panel');
+  if (hintToggle && hintPanel) {
+    hintToggle.addEventListener('click', () => {
+      const isHidden = hintPanel.classList.toggle('hidden');
+      hintToggle.setAttribute('aria-expanded', String(!isHidden));
+      hintToggle.classList.toggle('open', !isHidden);
+    });
+  }
+};
+
+const renderModalContent = (pokemon, modalMeta) => {
   const dexNumber = String(pokemon.id).padStart(3, '0');
-  const sprite = getSpriteUrl(pokemon);
-
-  const [{ weaknesses, strengths }, evolutionInfo] = await Promise.all([
-    calculateDamageProfile(pokemon),
-    getEvolutionInfo(pokemon),
-  ]);
+  const sprite = getSpriteUrl(pokemon, currentSpriteMode);
 
   modalContent.innerHTML = `
     <div class="modal-top">
       <div class="modal-sprite-shell ${sprite === FALLBACK_SPRITE ? 'fallback-shell' : ''}">
-        <img src="${sprite}" alt="${pokemon.name} sprite" />
+        <img src="${sprite}" alt="${pokemon.name} ${currentSpriteMode} sprite" />
       </div>
       <div class="modal-identity">
         <p class="eyebrow">Pokédex Entry</p>
@@ -402,33 +501,49 @@ const openModal = async (pokemon) => {
             .map((entry) => `<span class="type-chip ${entry.type.name}">${entry.type.name}</span>`)
             .join('')}
         </div>
+        ${renderVariantControls()}
       </div>
     </div>
 
     <section class="modal-section">
       <h3>Weak To</h3>
       <div class="weakness-row">
-        ${renderDamageChips(weaknesses, 'No Direct Weaknesses Found.')}
+        ${renderDamageChips(modalMeta.weaknesses, 'No Direct Weaknesses Found.')}
       </div>
     </section>
 
     <section class="modal-section">
       <h3>Super Effective Against</h3>
       <div class="weakness-row">
-        ${renderDamageChips(strengths, 'No Boosted Matchups Found.')}
+        ${renderDamageChips(modalMeta.strengths, 'No Boosted Matchups Found.')}
       </div>
     </section>
 
     <section class="modal-section">
       <h3>Evolution</h3>
-      ${renderEvolutionSection(evolutionInfo)}
+      ${renderEvolutionSection(modalMeta.evolutionInfo)}
+    </section>
+
+    <section class="modal-section">
+      <h3>Abilities</h3>
+      <div class="ability-list">
+        ${modalMeta.abilityDetails
+          .map(
+            (ability) => `
+              <article class="ability-card">
+                <div class="ability-heading-row">
+                  <span class="ability-name">${ability.name}</span>
+                  ${ability.isHidden ? '<span class="ability-tag">Hidden</span>' : ''}
+                </div>
+                <p class="ability-description">${ability.description}</p>
+              </article>
+            `
+          )
+          .join('')}
+      </div>
     </section>
 
     <section class="modal-section modal-facts">
-      <div class="fact-card">
-        <span class="fact-label">Abilities</span>
-        <span class="fact-value">${formatAbilities(pokemon)}</span>
-      </div>
       <div class="fact-card">
         <span class="fact-label">Height</span>
         <span class="fact-value">${pokemon.height / 10} m</span>
@@ -439,12 +554,34 @@ const openModal = async (pokemon) => {
       </div>
     </section>
   `;
+
+  attachModalInteractions();
+};
+
+const openModal = async (pokemon) => {
+  currentModalPokemon = pokemon;
+  currentSpriteMode = 'normal';
+
+  modalOverlay.classList.remove('hidden');
+  modalOverlay.setAttribute('aria-hidden', 'false');
+  modalContent.innerHTML = '<p class="modal-loading">Analyzing Pokédex Data…</p>';
+
+  const [{ weaknesses, strengths }, evolutionInfo, abilityDetails] = await Promise.all([
+    calculateDamageProfile(pokemon),
+    getEvolutionInfo(pokemon),
+    getAbilityDetails(pokemon),
+  ]);
+
+  pokemon._modalMeta = { weaknesses, strengths, evolutionInfo, abilityDetails };
+  renderModalContent(pokemon, pokemon._modalMeta);
 };
 
 const closeModal = () => {
   modalOverlay.classList.add('hidden');
   modalOverlay.setAttribute('aria-hidden', 'true');
   modalContent.innerHTML = '';
+  currentModalPokemon = null;
+  currentSpriteMode = 'normal';
 };
 
 const handleSearch = (event) => {
