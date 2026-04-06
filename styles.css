@@ -1620,6 +1620,7 @@ h1 {
 
 .compare-heading h2,
 .compare-header-card h3,
+.compare-pane h4,
 .compare-identity h3 {
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -1644,11 +1645,76 @@ h1 {
 .compare-pane {
   min-width: 0;
   display: grid;
-  gap: 0.75rem;
+  gap: 0.9rem;
   padding: 0.95rem;
   border-radius: 20px;
   background: linear-gradient(180deg, #f7f2e6, #ece3cb);
   border: 2px solid var(--screen-border);
+}
+
+.compare-pane-left {
+  border-color: rgba(95, 147, 183, 0.75);
+  box-shadow: inset 0 0 0 1px rgba(135, 184, 217, 0.22);
+}
+
+.compare-pane-right {
+  border-color: rgba(185, 143, 93, 0.78);
+  box-shadow: inset 0 0 0 1px rgba(248, 191, 131, 0.24);
+}
+
+.compare-pane-banner,
+.compare-pane-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.compare-pane-banner {
+  padding: 0.7rem 0.8rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(47, 57, 72, 0.08);
+}
+
+.compare-pane-banner h4,
+.compare-pane-label,
+.compare-pane-dex {
+  margin: 0;
+}
+
+.compare-pane-banner h4 {
+  margin-top: 0.2rem;
+  color: var(--line);
+  font-size: 1.05rem;
+  line-height: 1.15;
+}
+
+.compare-pane-label {
+  font-size: 0.76rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.compare-pane-left .compare-pane-label,
+.compare-pane-left .compare-pane-dex {
+  color: #245d88;
+}
+
+.compare-pane-right .compare-pane-label,
+.compare-pane-right .compare-pane-dex {
+  color: #8a5318;
+}
+
+.compare-pane-dex {
+  flex-shrink: 0;
+  font-weight: 800;
+}
+
+.compare-pane-content {
+  display: grid;
+  gap: 0.75rem;
 }
 
 .compare-header-card {
@@ -1725,6 +1791,12 @@ h1 {
   .compare-action-row {
     width: 100%;
     justify-content: stretch;
+  }
+
+  .compare-pane-banner,
+  .compare-pane-label-row {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .compare-header-sprite {

@@ -240,16 +240,18 @@ export const attachModalInteractions = ({ modalContent, onVariantChange, onFavor
   }
 };
 
-const renderCompareHeader = ({ pokemon }) => {
+const renderCompareHeader = ({ pokemon, sideLabel, accentClass }) => {
   const sprite = getSpriteUrl(pokemon);
   return `
-    <div class="compare-header-card">
+    <div class="compare-header-card ${accentClass}">
+      <div class="compare-pane-label-row">
+        <p class="compare-pane-label">${sideLabel}</p>
+        <p class="compare-pane-dex">#${String(pokemon.id).padStart(3, '0')}</p>
+      </div>
       <div class="compare-header-sprite modal-sprite-shell ${sprite === FALLBACK_SPRITE ? 'fallback-shell' : ''}">
         <img src="${sprite}" alt="${pokemon.name} sprite" />
       </div>
-      <p class="eyebrow">Compare</p>
       <h3>${toTitleCase(pokemon.name)}</h3>
-      <p class="modal-number">#${String(pokemon.id).padStart(3, '0')}</p>
       <div class="compare-type-row">
         ${pokemon.types.map((entry) => `<span class="compare-type-chip type-chip ${entry.type.name}">${entry.type.name}</span>`).join('')}
       </div>
@@ -257,12 +259,35 @@ const renderCompareHeader = ({ pokemon }) => {
   `;
 };
 
-const renderCompareSection = ({ title, leftContent, rightContent }) => `
+const renderComparePane = ({ pokemon, sideLabel, accentClass, content }) => `
+  <div class="compare-pane ${accentClass}">
+    <div class="compare-pane-banner">
+      <div>
+        <p class="compare-pane-label">${sideLabel}</p>
+        <h4>${toTitleCase(pokemon.name)}</h4>
+      </div>
+      <span class="compare-pane-dex">#${String(pokemon.id).padStart(3, '0')}</span>
+    </div>
+    <div class="compare-pane-content">${content}</div>
+  </div>
+`;
+
+const renderCompareSection = ({ title, leftPokemon, rightPokemon, leftContent, rightContent }) => `
   <section class="compare-section">
     <h3>${title}</h3>
     <div class="compare-section-grid">
-      <div class="compare-pane">${leftContent}</div>
-      <div class="compare-pane">${rightContent}</div>
+      ${renderComparePane({
+        pokemon: leftPokemon,
+        sideLabel: 'Pokémon 1',
+        accentClass: 'compare-pane-left',
+        content: leftContent,
+      })}
+      ${renderComparePane({
+        pokemon: rightPokemon,
+        sideLabel: 'Pokémon 2',
+        accentClass: 'compare-pane-right',
+        content: rightContent,
+      })}
     </div>
   </section>
 `;
@@ -285,36 +310,48 @@ export const renderCompareContent = ({ leftPokemon, rightPokemon, leftMeta, righ
 
     ${renderCompareSection({
       title: 'Pokémon',
-      leftContent: renderCompareHeader({ pokemon: leftPokemon }),
-      rightContent: renderCompareHeader({ pokemon: rightPokemon }),
+      leftPokemon,
+      rightPokemon,
+      leftContent: renderCompareHeader({ pokemon: leftPokemon, sideLabel: 'Pokémon 1', accentClass: 'compare-pane-left' }),
+      rightContent: renderCompareHeader({ pokemon: rightPokemon, sideLabel: 'Pokémon 2', accentClass: 'compare-pane-right' }),
     })}
 
     ${renderCompareSection({
       title: 'Weak To',
+      leftPokemon,
+      rightPokemon,
       leftContent: `<div class="weakness-row">${renderDamageChips(leftMeta.weaknesses, 'No Direct Weaknesses Found.')}</div>`,
       rightContent: `<div class="weakness-row">${renderDamageChips(rightMeta.weaknesses, 'No Direct Weaknesses Found.')}</div>`,
     })}
 
     ${renderCompareSection({
       title: 'Super Effective Against',
+      leftPokemon,
+      rightPokemon,
       leftContent: `<div class="weakness-row compare-strength-row">${renderDamageChips(leftMeta.strengths, 'No Boosted Matchups Found.')}</div>`,
       rightContent: `<div class="weakness-row compare-strength-row">${renderDamageChips(rightMeta.strengths, 'No Boosted Matchups Found.')}</div>`,
     })}
 
     ${renderCompareSection({
       title: 'Stats',
+      leftPokemon,
+      rightPokemon,
       leftContent: renderStatsSection(leftPokemon.stats),
       rightContent: renderStatsSection(rightPokemon.stats),
     })}
 
     ${renderCompareSection({
       title: 'Evolution',
+      leftPokemon,
+      rightPokemon,
       leftContent: renderEvolutionSection(leftMeta.evolutionInfo),
       rightContent: renderEvolutionSection(rightMeta.evolutionInfo),
     })}
 
     ${renderCompareSection({
       title: 'Abilities',
+      leftPokemon,
+      rightPokemon,
       leftContent: `<div class="ability-list">${leftMeta.abilityDetails.map((ability) => `
         <article class="ability-card">
           <div class="ability-heading-row">
