@@ -270,9 +270,17 @@ const renderCompareSection = ({ title, leftContent, rightContent }) => `
 export const renderCompareContent = ({ leftPokemon, rightPokemon, leftMeta, rightMeta }) => `
   <div class="compare-shell">
     <div class="compare-heading">
-      <p class="eyebrow">Compare Mode</p>
-      <h2>Side-by-side comparison</h2>
-      <p class="compare-copy">A cleaner way to compare stats, matchups, and evolution details at a glance.</p>
+      <div class="compare-heading-top">
+        <div>
+          <p class="eyebrow">Compare Mode</p>
+          <h2>${toTitleCase(leftPokemon.name)} vs ${toTitleCase(rightPokemon.name)}</h2>
+          <p class="compare-copy">Compare stats, matchups, evolution details, and abilities without bouncing between entries.</p>
+        </div>
+        <div class="compare-action-row">
+          <button class="compare-utility-button" type="button" data-compare-again>Compare Another</button>
+          <button class="compare-utility-button compare-utility-button-secondary" type="button" data-compare-done>Done</button>
+        </div>
+      </div>
     </div>
 
     ${renderCompareSection({

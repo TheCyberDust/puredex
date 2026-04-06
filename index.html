@@ -130,6 +130,16 @@
           </div>
 
           <div id="status-message" class="status-message" role="status">Loading Pokémon data…</div>
+          <div id="compare-status-bar" class="compare-status-bar hidden" aria-live="polite">
+            <div class="compare-status-copy">
+              <p class="compare-status-label">Compare Mode</p>
+              <p id="compare-status-text" class="compare-status-text"></p>
+            </div>
+            <div class="compare-status-actions">
+              <button id="compare-start-over" class="compare-status-button" type="button">Start Over</button>
+              <button id="compare-exit" class="compare-status-button compare-status-button-secondary" type="button">Exit</button>
+            </div>
+          </div>
           <div id="pokemon-grid" class="pokemon-grid" aria-label="Pokémon entries"></div>
         </section>
       </main>

@@ -12,6 +12,10 @@ const resetViewButton = document.getElementById('reset-view');
 const favoritesToggleButton = document.getElementById('favorites-toggle');
 const controlsToggleButton = document.getElementById('controls-toggle');
 const controlsBody = document.getElementById('advanced-controls');
+const compareStatusBar = document.getElementById('compare-status-bar');
+const compareStatusText = document.getElementById('compare-status-text');
+const compareStartOverButton = document.getElementById('compare-start-over');
+const compareExitButton = document.getElementById('compare-exit');
 const modalOverlay = document.getElementById('modal-overlay');
 const modalContent = document.getElementById('modal-content');
 const modalCloseButton = document.getElementById('modal-close');
@@ -28,6 +32,8 @@ let compareSourcePokemon = null;
 let showFavoritesOnly = false;
 const FAVORITES_STORAGE_KEY = 'puredex-favorites';
 const favoritePokemonIds = new Set();
+
+const formatPokemonName = (pokemon) => toTitleCase(pokemon.name);
 
 const loadFavorites = () => {
   try {
@@ -116,6 +122,21 @@ const openCompareView = async (sourcePokemon, targetPokemon) => {
     rightMeta: targetMeta,
   });
   compareSourcePokemon = null;
+  updateCompareUI();
+  const compareAgainButton = modalContent.querySelector('[data-compare-again]');
+  if (compareAgainButton) {
+    compareAgainButton.addEventListener('click', () => {
+      enterComparePickMode(sourcePokemon);
+    });
+  }
+
+  const compareDoneButton = modalContent.querySelector('[data-compare-done]');
+  if (compareDoneButton) {
+    compareDoneButton.addEventListener('click', () => {
+      closeModal();
+    });
+  }
+
   setStatus(`Comparing ${toTitleCase(sourcePokemon.name)} and ${toTitleCase(targetPokemon.name)}.`);
 };
 
@@ -128,14 +149,20 @@ const createTypeChip = (typeName) => {
 
 const createPokemonCard = (pokemon) => {
   const card = document.createElement('article');
-  card.className = 'pokemon-card';
+  const isCompareSource = compareSourcePokemon?.id === pokemon.id;
+  card.className = `pokemon-card ${isCompareSource ? 'compare-source-card' : ''} ${compareSourcePokemon && !isCompareSource ? 'compare-target-card' : ''}`;
   card.tabIndex = 0;
   card.setAttribute('role', 'button');
-  card.setAttribute('aria-label', `Open details for ${pokemon.name}`);
+  card.setAttribute('aria-label', compareSourcePokemon ? `${isCompareSource ? `${formatPokemonName(pokemon)} selected for compare` : `Compare ${formatPokemonName(compareSourcePokemon)} with ${formatPokemonName(pokemon)}`}` : `Open details for ${pokemon.name}`);
 
   const dexNumber = String(pokemon.id).padStart(3, '0');
   const sprite = getSpriteUrl(pokemon);
   const isFallback = sprite === FALLBACK_SPRITE;
+  const compareHint = isCompareSource
+    ? '<p class="compare-card-hint">First pick selected</p>'
+    : compareSourcePokemon
+      ? '<p class="compare-card-hint">Tap to compare</p>'
+      : '';
 
   card.innerHTML = `
     ${isFavorite(pokemon.id) ? '<span class="favorite-badge" aria-hidden="true">★</span>' : ''}
@@ -145,6 +172,7 @@ const createPokemonCard = (pokemon) => {
     </div>
     <h3>${pokemon.name}</h3>
     <div class="type-row"></div>
+    ${compareHint}
   `;
 
   const typeRow = card.querySelector('.type-row');
@@ -153,7 +181,12 @@ const createPokemonCard = (pokemon) => {
   });
 
   card.addEventListener('click', () => {
-    if (compareSourcePokemon && compareSourcePokemon.id !== pokemon.id) {
+    if (compareSourcePokemon) {
+      if (compareSourcePokemon.id === pokemon.id) {
+        setStatus(`${formatPokemonName(pokemon)} is already selected for compare. Pick a different Pokémon.`);
+        return;
+      }
+
       openCompareView(compareSourcePokemon, pokemon);
       return;
     }
@@ -163,7 +196,12 @@ const createPokemonCard = (pokemon) => {
   card.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      if (compareSourcePokemon && compareSourcePokemon.id !== pokemon.id) {
+      if (compareSourcePokemon) {
+        if (compareSourcePokemon.id === pokemon.id) {
+          setStatus(`${formatPokemonName(pokemon)} is already selected for compare. Pick a different Pokémon.`);
+          return;
+        }
+
         openCompareView(compareSourcePokemon, pokemon);
         return;
       }
@@ -198,6 +236,23 @@ const setStatus = (message) => {
 
 const setSearchFeedback = (message) => {
   searchFeedback.textContent = message;
+};
+
+const updateCompareUI = () => {
+  if (!compareStatusBar || !compareStatusText) {
+    return;
+  }
+
+  if (!compareSourcePokemon) {
+    compareStatusBar.classList.add('hidden');
+    compareStatusText.textContent = '';
+    renderPokemon(currentVisiblePokemon);
+    return;
+  }
+
+  compareStatusBar.classList.remove('hidden');
+  compareStatusText.textContent = `${formatPokemonName(compareSourcePokemon)} selected. Tap a different Pokémon card to compare.`;
+  renderPokemon(currentVisiblePokemon);
 };
 
 const populateTypeFilter = (pokemonList) => {
@@ -320,23 +375,7 @@ const refreshModal = () => {
     },
     onCompare: () => {
       if (!currentModalPokemon) return;
-      compareSourcePokemon = currentModalPokemon;
-      modalContent.innerHTML = `
-        <div class="compare-pick-state">
-          <p class="eyebrow">Compare Mode</p>
-          <h2>Choose a second Pokémon</h2>
-          <p class="compare-pick-copy">Pick another card to compare with ${toTitleCase(currentModalPokemon.name)}.</p>
-          <button class="compare-cancel-button" type="button" data-compare-cancel>Cancel Compare</button>
-        </div>
-      `;
-      const cancelButton = modalContent.querySelector('[data-compare-cancel]');
-      if (cancelButton) {
-        cancelButton.addEventListener('click', () => {
-          compareSourcePokemon = null;
-          refreshModal();
-        });
-      }
-      setStatus(`Compare mode active — choose a second Pokémon to compare with ${currentModalPokemon.name}.`);
+      enterComparePickMode(currentModalPokemon);
     },
   });
 };
@@ -353,13 +392,30 @@ const openModal = async (pokemon) => {
   refreshModal();
 };
 
-const closeModal = () => {
+const closeModal = ({ preserveCompare = false } = {}) => {
   modalOverlay.classList.add('hidden');
   modalOverlay.setAttribute('aria-hidden', 'true');
   modalContent.innerHTML = '';
   currentModalPokemon = null;
   currentSpriteMode = 'normal';
-  compareSourcePokemon = null;
+  if (!preserveCompare) {
+    compareSourcePokemon = null;
+    if (allPokemon.length) {
+      applyControls();
+      return;
+    }
+  }
+  updateCompareUI();
+};
+
+const enterComparePickMode = (pokemon) => {
+  compareSourcePokemon = pokemon;
+  closeModal({ preserveCompare: true });
+  setStatus(`Compare mode active. ${formatPokemonName(pokemon)} is selected as the first Pokémon.`);
+
+  if (pokedexEntriesSection) {
+    pokedexEntriesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 };
 
 const handleBackToTopVisibility = () => {
@@ -460,6 +516,22 @@ if (controlsToggleButton && controlsBody) {
 
   window.addEventListener('resize', updateControlsToggle);
   updateControlsToggle();
+}
+
+if (compareStartOverButton) {
+  compareStartOverButton.addEventListener('click', () => {
+    compareSourcePokemon = null;
+    updateCompareUI();
+    setStatus('Compare reset. Open any Pokémon and tap Compare to choose a new first pick.');
+  });
+}
+
+if (compareExitButton) {
+  compareExitButton.addEventListener('click', () => {
+    compareSourcePokemon = null;
+    updateCompareUI();
+    applyControls();
+  });
 }
 
 if (backToTopButton) {
