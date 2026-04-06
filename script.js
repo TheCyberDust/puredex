@@ -24,6 +24,7 @@ let currentSpriteMode = 'normal';
 let currentTypeFilter = 'all';
 let currentSortMode = 'dex-asc';
 let currentVisiblePokemon = [];
+let compareSourcePokemon = null;
 let showFavoritesOnly = false;
 const FAVORITES_STORAGE_KEY = 'puredex-favorites';
 const favoritePokemonIds = new Set();
@@ -80,6 +81,44 @@ const updateControlsToggle = () => {
   controlsToggleButton.setAttribute('aria-expanded', String(!isHidden));
 };
 
+const getPokemonModalMeta = async (pokemon) => {
+  if (pokemon._modalMeta) {
+    return pokemon._modalMeta;
+  }
+
+  const [{ weaknesses, strengths }, evolutionInfo, abilityDetails, { fetchSpeciesData }] = await Promise.all([
+    calculateDamageProfile(pokemon),
+    getEvolutionInfo(pokemon),
+    getAbilityDetails(pokemon),
+    import('./js/data.js'),
+  ]);
+
+  const speciesData = await fetchSpeciesData(pokemon);
+  pokemon._modalMeta = { weaknesses, strengths, evolutionInfo, abilityDetails, speciesData };
+  return pokemon._modalMeta;
+};
+
+const openCompareView = async (sourcePokemon, targetPokemon) => {
+  const [{ renderCompareContent }, sourceMeta, targetMeta] = await Promise.all([
+    import('./js/modal.js'),
+    getPokemonModalMeta(sourcePokemon),
+    getPokemonModalMeta(targetPokemon),
+  ]);
+
+  currentModalPokemon = null;
+  currentSpriteMode = 'normal';
+  modalOverlay.classList.remove('hidden');
+  modalOverlay.setAttribute('aria-hidden', 'false');
+  modalContent.innerHTML = renderCompareContent({
+    leftPokemon: sourcePokemon,
+    rightPokemon: targetPokemon,
+    leftMeta: sourceMeta,
+    rightMeta: targetMeta,
+  });
+  compareSourcePokemon = null;
+  setStatus(`Comparing ${toTitleCase(sourcePokemon.name)} and ${toTitleCase(targetPokemon.name)}.`);
+};
+
 const createTypeChip = (typeName) => {
   const chip = document.createElement('span');
   chip.className = `type-chip ${typeName}`;
@@ -113,10 +152,22 @@ const createPokemonCard = (pokemon) => {
     typeRow.appendChild(createTypeChip(entry.type.name));
   });
 
-  card.addEventListener('click', () => openModal(pokemon));
+  card.addEventListener('click', () => {
+    if (compareSourcePokemon && compareSourcePokemon.id !== pokemon.id) {
+      openCompareView(compareSourcePokemon, pokemon);
+      return;
+    }
+
+    openModal(pokemon);
+  });
   card.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
+      if (compareSourcePokemon && compareSourcePokemon.id !== pokemon.id) {
+        openCompareView(compareSourcePokemon, pokemon);
+        return;
+      }
+
       openModal(pokemon);
     }
   });
@@ -267,6 +318,26 @@ const refreshModal = () => {
       refreshModal();
       applyControls();
     },
+    onCompare: () => {
+      if (!currentModalPokemon) return;
+      compareSourcePokemon = currentModalPokemon;
+      modalContent.innerHTML = `
+        <div class="compare-pick-state">
+          <p class="eyebrow">Compare Mode</p>
+          <h2>Choose a second Pokémon</h2>
+          <p class="compare-pick-copy">Pick another card to compare with ${toTitleCase(currentModalPokemon.name)}.</p>
+          <button class="compare-cancel-button" type="button" data-compare-cancel>Cancel Compare</button>
+        </div>
+      `;
+      const cancelButton = modalContent.querySelector('[data-compare-cancel]');
+      if (cancelButton) {
+        cancelButton.addEventListener('click', () => {
+          compareSourcePokemon = null;
+          refreshModal();
+        });
+      }
+      setStatus(`Compare mode active — choose a second Pokémon to compare with ${currentModalPokemon.name}.`);
+    },
   });
 };
 
@@ -278,14 +349,7 @@ const openModal = async (pokemon) => {
   modalOverlay.setAttribute('aria-hidden', 'false');
   modalContent.innerHTML = '<p class="modal-loading">Analyzing Pokédex Data…</p>';
 
-  const [{ weaknesses, strengths }, evolutionInfo, abilityDetails, speciesData] = await Promise.all([
-    calculateDamageProfile(pokemon),
-    getEvolutionInfo(pokemon),
-    getAbilityDetails(pokemon),
-    import('./js/data.js').then(({ fetchSpeciesData }) => fetchSpeciesData(pokemon)),
-  ]);
-
-  pokemon._modalMeta = { weaknesses, strengths, evolutionInfo, abilityDetails, speciesData };
+  await getPokemonModalMeta(pokemon);
   refreshModal();
 };
 
@@ -295,6 +359,7 @@ const closeModal = () => {
   modalContent.innerHTML = '';
   currentModalPokemon = null;
   currentSpriteMode = 'normal';
+  compareSourcePokemon = null;
 };
 
 const handleBackToTopVisibility = () => {

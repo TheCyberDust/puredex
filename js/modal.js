@@ -75,16 +75,13 @@ const renderStatsSection = (stats) => {
     .join('');
 
   return `
-    <section class="modal-section">
-      <h3>Stats</h3>
-      <div class="stats-block">
-        ${rows}
-        <div class="stat-total-card">
-          <span class="fact-label">Base Stat Total</span>
-          <span class="stat-total-value">${total}</span>
-        </div>
+    <div class="stats-block">
+      ${rows}
+      <div class="stat-total-card">
+        <span class="fact-label">Base Stat Total</span>
+        <span class="stat-total-value">${total}</span>
       </div>
-    </section>
+    </div>
   `;
 };
 
@@ -149,14 +146,17 @@ export const renderModalContent = ({ pokemon, modalMeta, currentSpriteMode, isFa
       </div>
       <div class="modal-identity">
         <p class="eyebrow">Pokédex Entry</p>
-        <h2 id="modal-title">${pokemon.name}</h2>
+        <h2 id="modal-title">${toTitleCase(pokemon.name)}</h2>
         <p class="modal-number">#${dexNumber}</p>
         <div class="type-row modal-type-row">
           ${pokemon.types
             .map((entry) => `<span class="type-chip ${entry.type.name}">${entry.type.name}</span>`)
             .join('')}
         </div>
-        <button class="favorite-toggle ${isFavorite ? 'active' : ''}" type="button" data-favorite-toggle aria-pressed="${isFavorite}">${isFavorite ? '★ Favorited' : '☆ Favorite'}</button>
+        <div class="modal-action-row">
+          <button class="favorite-toggle ${isFavorite ? 'active' : ''}" type="button" data-favorite-toggle aria-pressed="${isFavorite}">${isFavorite ? '★ Favorited' : '☆ Favorite'}</button>
+          <button class="compare-toggle" type="button" data-compare-toggle>⇄ Compare</button>
+        </div>
         ${renderVariantControls(currentSpriteMode)}
       </div>
     </div>
@@ -180,7 +180,10 @@ export const renderModalContent = ({ pokemon, modalMeta, currentSpriteMode, isFa
       ${renderEvolutionSection(modalMeta.evolutionInfo)}
     </section>
 
-    ${renderStatsSection(pokemon.stats)}
+    <section class="modal-section">
+      <h3>Stats</h3>
+      ${renderStatsSection(pokemon.stats)}
+    </section>
 
     <section class="modal-section">
       <h3>Pokédex Entry</h3>
@@ -205,11 +208,10 @@ export const renderModalContent = ({ pokemon, modalMeta, currentSpriteMode, isFa
           .join('')}
       </div>
     </section>
-
   `;
 };
 
-export const attachModalInteractions = ({ modalContent, onVariantChange, onFavoriteToggle }) => {
+export const attachModalInteractions = ({ modalContent, onVariantChange, onFavoriteToggle, onCompare }) => {
   const variantButtons = modalContent.querySelectorAll('[data-variant]');
   variantButtons.forEach((button) => {
     button.addEventListener('click', () => {
@@ -222,6 +224,11 @@ export const attachModalInteractions = ({ modalContent, onVariantChange, onFavor
     favoriteToggle.addEventListener('click', onFavoriteToggle);
   }
 
+  const compareToggle = modalContent.querySelector('[data-compare-toggle]');
+  if (compareToggle && onCompare) {
+    compareToggle.addEventListener('click', onCompare);
+  }
+
   const hintToggle = modalContent.querySelector('.variant-hint-toggle');
   const hintPanel = modalContent.querySelector('.variant-hint-panel');
   if (hintToggle && hintPanel) {
@@ -232,3 +239,92 @@ export const attachModalInteractions = ({ modalContent, onVariantChange, onFavor
     });
   }
 };
+
+const renderCompareHeader = ({ pokemon }) => {
+  const sprite = getSpriteUrl(pokemon);
+  return `
+    <div class="compare-header-card">
+      <div class="compare-header-sprite modal-sprite-shell ${sprite === FALLBACK_SPRITE ? 'fallback-shell' : ''}">
+        <img src="${sprite}" alt="${pokemon.name} sprite" />
+      </div>
+      <p class="eyebrow">Compare</p>
+      <h3>${toTitleCase(pokemon.name)}</h3>
+      <p class="modal-number">#${String(pokemon.id).padStart(3, '0')}</p>
+      <div class="compare-type-row">
+        ${pokemon.types.map((entry) => `<span class="compare-type-chip type-chip ${entry.type.name}">${entry.type.name}</span>`).join('')}
+      </div>
+    </div>
+  `;
+};
+
+const renderCompareSection = ({ title, leftContent, rightContent }) => `
+  <section class="compare-section">
+    <h3>${title}</h3>
+    <div class="compare-section-grid">
+      <div class="compare-pane">${leftContent}</div>
+      <div class="compare-pane">${rightContent}</div>
+    </div>
+  </section>
+`;
+
+export const renderCompareContent = ({ leftPokemon, rightPokemon, leftMeta, rightMeta }) => `
+  <div class="compare-shell">
+    <div class="compare-heading">
+      <p class="eyebrow">Compare Mode</p>
+      <h2>Side-by-side comparison</h2>
+      <p class="compare-copy">A cleaner way to compare stats, matchups, and evolution details at a glance.</p>
+    </div>
+
+    ${renderCompareSection({
+      title: 'Pokémon',
+      leftContent: renderCompareHeader({ pokemon: leftPokemon }),
+      rightContent: renderCompareHeader({ pokemon: rightPokemon }),
+    })}
+
+    ${renderCompareSection({
+      title: 'Weak To',
+      leftContent: `<div class="weakness-row">${renderDamageChips(leftMeta.weaknesses, 'No Direct Weaknesses Found.')}</div>`,
+      rightContent: `<div class="weakness-row">${renderDamageChips(rightMeta.weaknesses, 'No Direct Weaknesses Found.')}</div>`,
+    })}
+
+    ${renderCompareSection({
+      title: 'Super Effective Against',
+      leftContent: `<div class="weakness-row compare-strength-row">${renderDamageChips(leftMeta.strengths, 'No Boosted Matchups Found.')}</div>`,
+      rightContent: `<div class="weakness-row compare-strength-row">${renderDamageChips(rightMeta.strengths, 'No Boosted Matchups Found.')}</div>`,
+    })}
+
+    ${renderCompareSection({
+      title: 'Stats',
+      leftContent: renderStatsSection(leftPokemon.stats),
+      rightContent: renderStatsSection(rightPokemon.stats),
+    })}
+
+    ${renderCompareSection({
+      title: 'Evolution',
+      leftContent: renderEvolutionSection(leftMeta.evolutionInfo),
+      rightContent: renderEvolutionSection(rightMeta.evolutionInfo),
+    })}
+
+    ${renderCompareSection({
+      title: 'Abilities',
+      leftContent: `<div class="ability-list">${leftMeta.abilityDetails.map((ability) => `
+        <article class="ability-card">
+          <div class="ability-heading-row">
+            <span class="ability-name">${ability.name}</span>
+            ${ability.isHidden ? '<span class="ability-tag">Hidden</span>' : ''}
+          </div>
+          <p class="ability-description">${ability.description}</p>
+        </article>
+      `).join('')}</div>`,
+      rightContent: `<div class="ability-list">${rightMeta.abilityDetails.map((ability) => `
+        <article class="ability-card">
+          <div class="ability-heading-row">
+            <span class="ability-name">${ability.name}</span>
+            ${ability.isHidden ? '<span class="ability-tag">Hidden</span>' : ''}
+          </div>
+          <p class="ability-description">${ability.description}</p>
+        </article>
+      `).join('')}</div>`,
+    })}
+  </div>
+`;
